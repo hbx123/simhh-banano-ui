@@ -4,7 +4,18 @@
 ![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)
 
-A stunning, professional-grade web application for generating and editing images using Google's Gemini AI (Nano Banana Pro). Built with Next.js, TypeScript, and Framer Motion for a beautiful, responsive experience.
+A stunning, professional-grade web application for generating and editing images using Google's Gemini AI (Nano Banana Pro). Built with Next.js, TypeScript, and Framer Motion for a beautiful, responsive user experience.
+
+## 📸 Screenshots
+
+### Homepage
+![Homepage](./public/screenshots/homepage.png)
+
+### Thumbnail Generator
+![Thumbnail Generator](./public/screenshots/tumbnail-generator.png)
+
+### Viral Generator
+![Viral Generator](./public/screenshots/viral-generator.png)
 
 ## ✨ Features
 
@@ -31,7 +42,7 @@ A stunning, professional-grade web application for generating and editing images
 ### Prerequisites
 
 - Node.js 18+ installed
-- A Google AI Studio API key (get it [here](https://aistudio.google.com/apikey))
+- A Google AI Studio API key (get it [here](https://aistudio.google. com/apikey))
 
 ### Installation
 
@@ -48,7 +59,7 @@ cd nano-banana-ui
 npm install
 ```
 
-3. Run the development server:
+3.  Run the development server:
 
 ```bash
 npm run dev
@@ -64,15 +75,15 @@ npm run dev
 
 1. Visit [Google AI Studio](https://aistudio.google.com/apikey)
 2. Sign in with your Google account
-3. Create a new API key for Gemini
+3.  Create a new API key for Gemini
 4. Copy and paste it into the app
 
 ### Generating Images
 
 1. **Select a Feature**: Choose from text-to-image, image editing, multi-image composition, or special features
 2. **Upload Images** (if required): Upload reference images for editing or composition
-3. **Enter Your Prompt**: Describe what you want to generate
-4. **Configure Settings**: Adjust aspect ratio and quality
+3.  **Enter Your Prompt**: Describe what you want to generate
+4.  **Configure Settings**: Adjust aspect ratio and quality
 5. **Generate**: Click the generate button and watch the magic happen!
 6. **Download**: Download your generated image
 
@@ -107,9 +118,9 @@ nano-banana-ui/
 ├── app/
 │   ├── api/
 │   │   └── generate/
-│   │       └── route.ts          # API route for image generation
-│   ├── globals.css               # Custom cyber-creative theme
-│   ├── layout.tsx                # Root layout
+│   │       └── route. ts          # API route for image generation
+│   ├── globals. css               # Custom cyber-creative theme
+│   ├── layout. tsx                # Root layout
 │   └── page.tsx                  # Main page
 ├── components/
 │   ├── ApiKeyConfig.tsx          # API key configuration modal
@@ -132,7 +143,7 @@ This application features a **Cyber-Creative Studio** aesthetic:
 
 ## 📝 API Documentation
 
-The app uses the Google Gemini API for image generation. Check out the [official API docs](https://ai.google.dev/gemini-api/docs/image-generation) for more details.
+The app uses the Google Gemini API for image generation. Check out the [official API docs](https://ai.google. dev/gemini-api/docs/image-generation) for more details.
 
 ### Supported Models
 
@@ -159,9 +170,9 @@ Contributions are welcome! Feel free to:
 
 **Yuval Avidani**
 - 🌐 Website: [yuv.ai](https://yuv.ai)
-- 🐦 Twitter: [@yuvalav](https://x.com/yuvalav)
-- 📸 Instagram: [@yuval_770](https://instagram.com/yuval_770)
-- 🔗 LinkTree: [linktr.ee/yuvai](https://linktr.ee/yuvai)
+- 🐦 Twitter: [@yuvalav](https://x. com/yuvalav)
+- 📸 Instagram: [@yuval_770](https://instagram. com/yuval_770)
+- 🔗 LinkTree: [linktr.ee/yuvai](https://linktr. ee/yuvai)
 
 Founder of YUV.AI - Building the future of AI-powered creativity.
 
