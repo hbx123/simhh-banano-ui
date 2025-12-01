@@ -1,0 +1,416 @@
+'use client';
+
+import { useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Feature, GenerationConfig } from '@/types';
+import {
+  Upload,
+  X,
+  Wand2,
+  Loader2,
+  Download,
+  ImagePlus,
+  Settings,
+  Sparkles,
+} from 'lucide-react';
+
+interface GenerationInterfaceProps {
+  feature: Feature;
+  apiKey: string;
+  onBack: () => void;
+}
+
+export default function GenerationInterface({ feature, apiKey, onBack }: GenerationInterfaceProps) {
+  const [prompt, setPrompt] = useState('');
+  const [images, setImages] = useState<string[]>([]);
+  const [config, setConfig] = useState<GenerationConfig>({
+    aspectRatio: '16:9',
+    imageSize: '2K',
+    useGoogleSearch: false,
+  });
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const maxImages = feature.maxImages || 1;
+
+    if (images.length + files.length > maxImages) {
+      setError(`Maximum ${maxImages} images allowed`);
+      return;
+    }
+
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImages((prev) => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleGenerate = async () => {
+    if (!prompt.trim() && feature.id !== 'image-editing') {
+      setError('Please enter a prompt');
+      return;
+    }
+
+    if (feature.requiresImage && images.length === 0) {
+      setError('Please upload at least one image');
+      return;
+    }
+
+    setIsGenerating(true);
+    setError(null);
+    setGeneratedImage(null);
+
+    try {
+      // Prepare the prompt based on feature type
+      let finalPrompt = prompt;
+      if (feature.id === 'social-media-thumbnail') {
+        finalPrompt = `Create a VIRAL YouTube/Social Media thumbnail with these elements:
+- DRAMATIC, eye-catching scene with shocked/surprised facial expression
+- BIG, BOLD text overlays with key phrases (use vibrant colors like yellow, red, white)
+- Arrows, circles, or highlighting elements pointing to important parts
+- High contrast and saturated colors for maximum impact
+- Professional editing style that screams "CLICK ME!"
+- Energy and urgency in the composition
+
+User's custom requirements: ${prompt}
+
+Style: Photorealistic, professional thumbnail editing, viral content aesthetics`;
+      }
+
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: finalPrompt,
+          images: images.map((img) => img.split(',')[1]), // Remove data:image/...;base64, prefix
+          config,
+          featureId: feature.id,
+          apiKey,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.imageData) {
+        setGeneratedImage(`data:image/png;base64,${data.imageData}`);
+      } else {
+        setError(data.error || 'Failed to generate image');
+      }
+    } catch (err) {
+      setError('An error occurred during generation');
+      console.error(err);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const downloadImage = () => {
+    if (!generatedImage) return;
+
+    const link = document.createElement('a');
+    link.href = generatedImage;
+    link.download = `nano-banana-${feature.id}-${Date.now()}.png`;
+    link.click();
+  };
+
+  // Special prompt templates for social media
+  const socialMediaTemplates = [
+    'Excited person pointing at [your subject], dramatic lighting, shocked expression',
+    'Before and after transformation scene, split screen effect',
+    'Action scene with motion blur, dynamic angle, urgent energy',
+    'Reveal moment with glowing highlight effects, surprised reaction',
+  ];
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass-card p-6 flex items-center justify-between"
+      >
+        <div className="flex items-center gap-4">
+          <button
+            onClick={onBack}
+            className="btn-secondary text-sm py-2 px-4"
+          >
+            ← Back
+          </button>
+          <div>
+            <h2 className="text-2xl font-bold flex items-center gap-2" style={{ fontFamily: 'Orbitron, monospace' }}>
+              <span className="text-4xl">{feature.icon}</span>
+              {feature.name}
+            </h2>
+            <p className="text-sm text-[var(--foreground-muted)]">{feature.description}</p>
+          </div>
+        </div>
+        <button
+          onClick={() => setShowSettings(!showSettings)}
+          className={`btn-secondary text-sm py-2 px-4 flex items-center gap-2 ${showSettings ? 'bg-[var(--neon-cyan)]/20' : ''}`}
+        >
+          <Settings size={18} />
+          Settings
+        </button>
+      </motion.div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Input Section */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="space-y-6"
+        >
+          {/* Image Upload */}
+          {feature.requiresImage && (
+            <div className="glass-card p-6 space-y-4">
+              <h3 className="text-xl font-bold" style={{ fontFamily: 'Orbitron, monospace' }}>
+                Upload Image{feature.requiresMultipleImages ? 's' : ''}
+              </h3>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple={feature.requiresMultipleImages}
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full py-4 border-2 border-dashed border-[var(--neon-cyan)]/30 rounded-xl hover:border-[var(--neon-cyan)] hover:bg-[var(--neon-cyan)]/5 transition-all flex flex-col items-center gap-2 text-[var(--foreground-muted)] hover:text-[var(--neon-cyan)]"
+              >
+                <ImagePlus size={32} />
+                <span className="font-medium">
+                  Click to upload{feature.requiresMultipleImages && ` (max ${feature.maxImages})`}
+                </span>
+              </button>
+
+              {images.length > 0 && (
+                <div className="grid grid-cols-2 gap-3">
+                  {images.map((img, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={img}
+                        alt={`Upload ${index + 1}`}
+                        className="w-full aspect-square object-cover rounded-lg"
+                      />
+                      <button
+                        onClick={() => removeImage(index)}
+                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Prompt Input */}
+          <div className="glass-card p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold" style={{ fontFamily: 'Orbitron, monospace' }}>
+                Prompt
+              </h3>
+              {feature.id === 'social-media-thumbnail' && (
+                <button
+                  onClick={() => setPrompt(socialMediaTemplates[Math.floor(Math.random() * socialMediaTemplates.length)])}
+                  className="text-xs text-[var(--neon-cyan)] hover:text-[var(--neon-purple)] flex items-center gap-1"
+                >
+                  <Sparkles size={14} />
+                  Random Template
+                </button>
+              )}
+            </div>
+
+            <textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder={
+                feature.id === 'social-media-thumbnail'
+                  ? 'Describe the subject, emotion, and key elements you want in your thumbnail...'
+                  : 'Describe the image you want to generate...'
+              }
+              className="w-full min-h-[150px] resize-none"
+            />
+
+            {feature.id === 'social-media-thumbnail' && (
+              <div className="p-3 rounded-lg bg-[var(--banana-yellow)]/10 border border-[var(--banana-yellow)]/30 text-sm">
+                <p className="text-[var(--banana-yellow)] font-semibold mb-1">💡 Pro Tip:</p>
+                <p className="text-[var(--foreground-muted)]">
+                  Describe the emotion and action you want! The AI will automatically add dramatic effects,
+                  bold text, and viral thumbnail styling.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Settings Panel */}
+          <AnimatePresence>
+            {showSettings && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="glass-card p-6 space-y-4 overflow-hidden"
+              >
+                <h3 className="text-xl font-bold" style={{ fontFamily: 'Orbitron, monospace' }}>
+                  Generation Settings
+                </h3>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Aspect Ratio</label>
+                    <select
+                      value={config.aspectRatio}
+                      onChange={(e) => setConfig({ ...config, aspectRatio: e.target.value as any })}
+                      className="w-full"
+                    >
+                      <option value="1:1">1:1 (Square - Instagram Post)</option>
+                      <option value="4:5">4:5 (Instagram Portrait)</option>
+                      <option value="9:16">9:16 (Story/Reels)</option>
+                      <option value="16:9">16:9 (YouTube Thumbnail)</option>
+                      <option value="21:9">21:9 (Ultra Wide)</option>
+                      <option value="3:2">3:2 (Classic Photo)</option>
+                      <option value="4:3">4:3 (Standard)</option>
+                    </select>
+                  </div>
+
+                  {feature.modelType === 'pro' && (
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Image Quality</label>
+                      <select
+                        value={config.imageSize}
+                        onChange={(e) => setConfig({ ...config, imageSize: e.target.value as any })}
+                        className="w-full"
+                      >
+                        <option value="1K">1K (Fast)</option>
+                        <option value="2K">2K (Balanced)</option>
+                        <option value="4K">4K (Highest Quality)</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {feature.id === 'search-grounding' && (
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                      <span className="text-sm">Use Google Search</span>
+                      <input
+                        type="checkbox"
+                        checked={config.useGoogleSearch}
+                        onChange={(e) => setConfig({ ...config, useGoogleSearch: e.target.checked })}
+                        className="w-5 h-5"
+                      />
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Generate Button */}
+          <button
+            onClick={handleGenerate}
+            disabled={isGenerating}
+            className="btn-primary w-full py-4 text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="animate-spin" size={24} />
+                Generating Magic...
+              </>
+            ) : (
+              <>
+                <Wand2 size={24} />
+                Generate Image
+              </>
+            )}
+          </button>
+
+          {/* Error Display */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="glass-card p-4 bg-red-500/10 border-red-500/30 text-red-300"
+              >
+                {error}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+
+        {/* Output Section */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="glass-card p-6 space-y-4"
+        >
+          <h3 className="text-xl font-bold" style={{ fontFamily: 'Orbitron, monospace' }}>
+            Generated Image
+          </h3>
+
+          <div className="aspect-video bg-[var(--background-elevated)] rounded-xl flex items-center justify-center relative overflow-hidden">
+            {isGenerating && (
+              <div className="flex flex-col items-center gap-4">
+                <div className="loading-spinner" />
+                <p className="text-[var(--foreground-muted)] animate-pulse">
+                  Creating your masterpiece...
+                </p>
+              </div>
+            )}
+
+            {!isGenerating && !generatedImage && (
+              <div className="text-center p-8 text-[var(--foreground-muted)]">
+                <Wand2 size={48} className="mx-auto mb-4 opacity-30" />
+                <p>Your generated image will appear here</p>
+              </div>
+            )}
+
+            {generatedImage && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="relative w-full h-full"
+              >
+                <img
+                  src={generatedImage}
+                  alt="Generated"
+                  className="w-full h-full object-contain"
+                />
+              </motion.div>
+            )}
+          </div>
+
+          {generatedImage && (
+            <motion.button
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              onClick={downloadImage}
+              className="btn-secondary w-full flex items-center justify-center gap-2"
+            >
+              <Download size={20} />
+              Download Image
+            </motion.button>
+          )}
+        </motion.div>
+      </div>
+    </div>
+  );
+}
