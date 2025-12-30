@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// 先定义常量
+// 所有常量必须放在最上面，函数前面
 const BASE_URL = 'https://openrouter.ai/api/v1';
 
 export async function POST(request: NextRequest) {
-  // 在函数内部读取并检查环境变量
+  // 在函数内部读取环境变量
   const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
+  // 检查 key 是否存在
   if (!OPENROUTER_API_KEY) {
     return NextResponse.json(
       { error: 'Missing OpenRouter API Key – please add it in Vercel Environment Variables' },
@@ -18,9 +19,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { prompt, aspectRatio, resolution, features } = body;
 
+    // 模型选择（推荐默认用这个快而便宜，想 Pro 版改下面那行）
     const model = 'google/gemini-2.5-flash-image-preview';
-    // 如需 Pro 版更高清，改成下面这行：
-    // const model = 'google/gemini-3-pro-image-preview';
+    // const model = 'google/gemini-3-pro-image-preview'; // Pro 版更高清，支持 4K
 
     const finalPrompt = features ? `${features.join(', ')}, ${prompt}` : prompt;
 
