@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// 先定义常量
 const BASE_URL = 'https://openrouter.ai/api/v1';
 
 export async function POST(request: NextRequest) {
-  // 使用 Vercel 环境变量读取 OpenRouter API Key
+  // 在函数内部读取并检查环境变量
   const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
-  // 如果环境变量里没有 key，直接返回错误（部署时会提醒你）
   if (!OPENROUTER_API_KEY) {
     return NextResponse.json(
       { error: 'Missing OpenRouter API Key – please add it in Vercel Environment Variables' },
@@ -18,12 +18,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { prompt, aspectRatio, resolution, features } = body;
 
-    // 这里可以根据需要切换模型
     const model = 'google/gemini-2.5-flash-image-preview';
-    // 如果想用 Pro 版（更高清、支持 4K），取消下面这行的注释：
+    // 如需 Pro 版更高清，改成下面这行：
     // const model = 'google/gemini-3-pro-image-preview';
 
-    // 拼接预设风格（features 是项目里那些卡片传过来的数组）
     const finalPrompt = features ? `${features.join(', ')}, ${prompt}` : prompt;
 
     const response = await fetch(`${BASE_URL}/chat/completions`, {
@@ -55,7 +53,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No image generated' }, { status: 500 });
     }
 
-    const base64Image = images[0]; // 返回第一张图的 base64
+    const base64Image = images[0];
 
     return NextResponse.json({ image: base64Image });
   } catch (err) {
