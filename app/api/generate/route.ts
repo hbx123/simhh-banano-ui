@@ -1,33 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// 把这里换成你的 OpenRouter API Key（从 https://openrouter.ai/keys 获取）
-//const OPENROUTER_API_KEY = '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';
-
-
-
 const BASE_URL = 'https://openrouter.ai/api/v1';
 
 export async function POST(request: NextRequest) {
-
+  // 使用 Vercel 环境变量读取 OpenRouter API Key
   const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
-if (!OPENROUTER_API_KEY) {
-  return NextResponse.json(
-    { error: 'Missing OpenRouter API Key in environment variables' },
-    { status: 500 }
-  );
-}
-  
+  // 如果环境变量里没有 key，直接返回错误（部署时会提醒你）
+  if (!OPENROUTER_API_KEY) {
+    return NextResponse.json(
+      { error: 'Missing OpenRouter API Key – please add it in Vercel Environment Variables' },
+      { status: 500 }
+    );
+  }
+
   try {
     const body = await request.json();
-    const { prompt, aspectRatio, resolution, features } = body;  // 项目前端传的参数（prompt、aspectRatio 等）
+    const { prompt, aspectRatio, resolution, features } = body;
 
-    // 选择模型（推荐这些）
-    const model = 'google/gemini-2.5-flash-image-preview';  // 普通 Nano Banana（快、便宜）
-    // const model = 'google/gemini-2.5-flash-image';         // 稳定版
-    // const model = 'google/gemini-3-pro-image-preview';    // Nano Banana Pro（质量更高，支持 2K/4K）
+    // 这里可以根据需要切换模型
+    const model = 'google/gemini-2.5-flash-image-preview';
+    // 如果想用 Pro 版（更高清、支持 4K），取消下面这行的注释：
+    // const model = 'google/gemini-3-pro-image-preview';
 
-    // 组合最终提示词（项目有 features 预设风格，这里简单拼接）
+    // 拼接预设风格（features 是项目里那些卡片传过来的数组）
     const finalPrompt = features ? `${features.join(', ')}, ${prompt}` : prompt;
 
     const response = await fetch(`${BASE_URL}/chat/completions`, {
@@ -35,23 +31,15 @@ if (!OPENROUTER_API_KEY) {
       headers: {
         'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
-        // 可选：加这些让 OpenRouter 统计更好
-        // 'HTTP-Referer': 'https://your-vercel-app.vercel.app',
-        // 'X-Title': 'My Nano Banana Panel',
       },
       body: JSON.stringify({
         model,
         messages: [{ role: 'user', content: finalPrompt }],
-        modalities: ['image', 'text'],  // 关键：请求图像输出
-        // 分辨率和比例控制（Gemini 支持）
+        modalities: ['image', 'text'],
         image_config: {
-          // aspect_ratio 示例: "1:1", "16:9", "9:16", "4:3", "3:4"
           aspect_ratio: aspectRatio || '1:1',
-          // image_size 支持 "1K", "2K", "4K"（Pro 版更好）
-          image_size: resolution || '1K',  // 如 "1024x1024" 或 "2K"
+          image_size: resolution || '1K',
         },
-        // 可选：生成多张（max_images: 4）
-        // max_images: 1,
       }),
     });
 
@@ -61,15 +49,13 @@ if (!OPENROUTER_API_KEY) {
     }
 
     const data = await response.json();
-
-    // OpenRouter 返回图像在 message.images 数组里（base64 data URL）
     const images = data.choices[0]?.message?.images || [];
+
     if (images.length === 0) {
       return NextResponse.json({ error: 'No image generated' }, { status: 500 });
     }
 
-    // 返回第一张（或多张，根据项目前端支持）
-    const base64Image = images[0];  // 如 "data:image/png;base64,xxxx"
+    const base64Image = images[0]; // 返回第一张图的 base64
 
     return NextResponse.json({ image: base64Image });
   } catch (err) {
