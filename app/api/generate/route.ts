@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // 把这里换成你的 OpenRouter API Key（从 https://openrouter.ai/keys 获取）
-const OPENROUTER_API_KEY = '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';
+//const OPENROUTER_API_KEY = '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';
+
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+
+if (!OPENROUTER_API_KEY) {
+  return NextResponse.json(
+    { error: 'Missing OpenRouter API Key in environment variables' },
+    { status: 500 }
+  );
+}
 
 const BASE_URL = 'https://openrouter.ai/api/v1';
 
